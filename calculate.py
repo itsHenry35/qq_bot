@@ -1,5 +1,6 @@
 import re
 from math import *
+import math
 
 
 # 将算式从字符串处理成列表，解决横杠是负号还是减号的问题
@@ -119,6 +120,7 @@ def gaojie(op_stack, num_stack):
         op = op_stack.pop()
         num2 = num_stack.pop()
         num_stack.append(log(num2))
+    
 
 
 # 负责遍历算式列表中的字符，决定压入数字栈中或压入运算符栈中或弹栈运算
@@ -143,7 +145,9 @@ def final_calc(formula_list):
             elif item == '-e':
                 num_stack.append(-e)
             else:
-                num_stack.append(float(item))  # 字符串转换为浮点数
+                if item.__contains__('！') or item.__contains__('!'):
+                    item = math.factorial(int(item.replace('！', '').replace('!', '')))
+                num_stack.append(int(item))  # 字符串转换为浮点数
         # 如果是运算符
         else:
             while True:

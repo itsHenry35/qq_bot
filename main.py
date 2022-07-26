@@ -3,6 +3,7 @@ import yaml
 import urllib
 from calculate import *
 import time
+import re
 
 def config():
     global api
@@ -23,9 +24,12 @@ def get_group_msg():
         'group_id=' + group_id,
         ''
     ]
+    num = 0
     url = (urllib.parse.urlunparse(qs))
     result = requests.get(url)
-    json = result.json()['data']['messages'][19] #get newest message
+    json = result.json()['data']['messages'] #get newest message
+    num = len(json)
+    json = json[num-1]
     msg_id = json['message_id']
     msg = json['message']
     sender_uid = json['sender']['user_id']
@@ -37,23 +41,38 @@ def get_group_msg():
     return gathering
 
 def calculate(formula):
+    max = math.factorial(1600)
+    if formula.__contains__('!'):
+        formula_try = re.sub('!', '', formula)
+        if int(formula_try) > 1600:
+            return 'Value too big!'
+    if formula.__contains__('！'):
+        formula_try = re.sub('！', '', formula)
+        if int(formula_try) > 1600:
+            return 'Value too big!'
+    formula = re.sub('=', '', formula) 
     formula_list = formula_format(formula)
     result = final_calc(formula_list)
-    return formula + ' = ' + result
+    if int(result) > max:
+        return 'Value too big!'
+    else:
+        return formula + '=' + result
 
 def send_msg(msg):
+    msg=urllib.parse.quote(msg)
     qs = [
         'http',
         api,
         '/send_msg',
         '',
-        'group_id=' + group_id,
-        'message=' + msg,
+        'group_id=' + group_id + '&message=' + msg + '',
+        ''
     ]
-    url = (urllib.parse.urlunparse(qs))
+    url = urllib.parse.urlunparse(qs)
     print(url)
     result = requests.get(url)
-    print(result.text())
+    print(result)
+    
 
 def monitor_messages_and_send():
     global msg_id
@@ -70,9 +89,13 @@ def monitor_messages_and_send():
             print('not a calculating message')
             return
         msg = '[CQ:reply,id=' + msg_id_now + '][CQ:at,qq=' + sender_uid + '][CQ:at,qq=' + sender_uid + '] ' + result
+        print(msg)
         send_msg(msg)
 
 config()
 while True:
-    monitor_messages_and_send()
-    time.sleep(2)
+    try:
+        monitor_messages_and_send()
+    except:
+        time.sleep(2)
+    time.sleep(0.5)
